@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>I Need Help - Safety Scanner</title>
+    <!-- 1. Tailwind CSS CDN for instant styling and responsiveness -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@700&display=swap" rel="stylesheet">
+    
+    <!-- 2. Custom Styling for High Contrast and Font -->
+    <style>
+        body { font-family: 'Roboto Mono', monospace; }
+        /* High-contrast red for immediate attention */
+        .bg-emergency { background-color: #f00000; } 
+        .text-emergency { color: #f00000; }
+        /* Animation for status bar updates */
+        #statusMessage {
+            transition: background-color 0.5s ease-in-out;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col antialiased">
+
+    <!-- Header: Clean, high-contrast, static -->
+    <header class="bg-black text-white p-5 text-center border-b-4 border-red-600">
+        <div class="text-4xl font-extrabold">🆘</div>
+        <h1 class="text-2xl font-bold tracking-widest">I NEED HELP</h1>
+    </header>
+
+    <main class="flex-grow p-4 md:p-8 max-w-xl w-full mx-auto">
+        
+        <!-- Status Message Section (Initially Yellow for 'Awaiting GPS') -->
+        <section id="statusMessage" class="bg-yellow-500 text-black p-4 rounded-xl mb-6 text-center font-bold text-lg border-2 border-black">
+            Awaiting GPS location...
+        </section>
+
+        <!-- Child Information Card: High-contrast data display -->
+        <section class="bg-white border-4 border-black p-6 rounded-xl shadow-2xl mb-8">
+            <div class="flex items-start space-x-4">
+                <!-- Avatar Placeholder -->
+                <div class="flex-shrink-0 w-16 h-16 bg-gray-300 rounded-full border-2 border-gray-600">
+                </div>
+                <div class="flex-grow">
+                    <h2 class="text-3xl font-extrabold uppercase mb-2">Priya</h2>
+                    <!-- Personal Message: Emphasized with emergency color -->
+                    <p class="text-xl italic text-emergency pt-2 border-t border-gray-300">
+                        Age: 06
+                        Father's name: Mr. Preetam Roy
+                        Address: NIFT Campus, Raebareli.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Action Buttons: Primary and Secondary CTAs -->
+        <section class="flex flex-col space-y-4">
+            <!-- Primary CTA Button (CALL GUARDIAN) -->
+            <a id="primary-cta" href="tel:+919938568629" class="bg-emergency hover:bg-red-700 text-white p-5 rounded-lg text-2xl font-bold text-center transition duration-200 shadow-lg uppercase active:shadow-none">
+                CALL GUARDIAN
+            </a>
+
+            <!-- Secondary CTA Button (EMERGENCY CONTACT) -->
+            <a id="secondary-cta" href="tel:+917985476425" class="bg-white hover:bg-gray-200 text-blue-700 border-2 border-blue-700 p-5 rounded-lg text-xl font-bold text-center transition duration-200 shadow-md uppercase active:shadow-none">
+                EMERGENCY CONTACT
+            </a>
+        </section>
+    </main>
+
+    <!-- Footer: Non-critical information -->
+    <footer class="mt-auto p-4 text-center text-xs text-gray-600 border-t border-gray-300">
+        <p>Jewelry ID: 1A2B3C4D | Scan ID: 9876</p>
+        <p class="mt-1"><a href="/privacy-policy" class="hover:text-black underline">Privacy Policy Link</a></p>
+    </footer>
+
+    <!-- 3. JavaScript Logic for GPS and API Submission -->
+    <script>
+        // --- Configuration ---
+        // Placeholder for your actual API endpoint
+        const API_ENDPOINT = 'https://your-server.com/api/submit-location';
+        const JEWELRY_ID = '1A2B3C4D';
+
+        // --- DOM Elements ---
+        const statusMessage = document.getElementById('statusMessage');
+
+        /**
+         * Updates the status message on the page with appropriate styling.
+         * @param {string} message - The text to display.
+         * @param {string} level - 'loading', 'success', or 'error'.
+         */
+        function updateStatus(message, level) {
+            statusMessage.textContent = message;
+            
+            // Reset base classes (p-4 rounded-xl mb-6 text-center font-bold text-lg border-2 border-black)
+            statusMessage.className = 'p-4 rounded-xl mb-6 text-center font-bold text-lg border-2 border-black';
+            
+            if (level === 'loading') {
+                statusMessage.classList.add('bg-yellow-500', 'text-black');
+            } else if (level === 'success') {
+                statusMessage.classList.add('bg-green-600', 'text-white');
+            } else if (level === 'error') {
+                statusMessage.classList.add('bg-red-600', 'text-white');
+            }
+        }
+
+        /**
+         * Handles successful retrieval of GPS coordinates and initiates API submission.
+         * @param {GeolocationPosition} position - The object containing coordinates.
+         */
+        function geoSuccess(position) {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            const data = {
+                jewelryId: JEWELRY_ID,
+                latitude: lat,
+                longitude: lon,
+                timestamp: new Date().toISOString()
+            };
+
+            updateStatus(`GPS Acquired! (${lat.toFixed(4)}, ${lon.toFixed(4)}). Sending to server...`, 'loading');
+
+            // Send Location Data to API (Simulated)
+            submitLocationToAPI(data)
+                .then(() => {
+                    updateStatus('✅ IMPORTANT: GPS Location has been sent to the Guardian.', 'success');
+                })
+                .catch(error => {
+                    console.error('API Submission Failed:', error);
+                    updateStatus('⚠️ ERROR: Location failed to send. Try refreshing.', 'error');
+                });
+        }
+
+        /**
+         * Handles GPS retrieval errors (e.g., user denied access).
+         * @param {GeolocationPositionError} error - The error object.
+         */
+        function geoError(error) {
+            // FIX: Log the specific error code and message for better debugging
+            console.error(`Geolocation Error [Code: ${error.code}]: ${error.message || 'Unknown error'}`);
+            
+            let message = '⚠️ GPS unavailable. Please enable location services.';
+            if (error.code === 1) {
+                message = '⚠️ Location access denied by the user.';
+            } else if (error.code === 2) {
+                message = '⚠️ Location lookup failed or is temporarily unavailable.';
+            } else if (error.code === 3) {
+                 message = '⚠️ Location request timed out.';
+            }
+            updateStatus(message, 'error');
+        }
+
+
+        /**
+         * Simulates sending data to a server API endpoint.
+         * Replaced with a placeholder Promise since actual network calls fail in this environment.
+         * @param {object} data - The payload to send.
+         * @returns {Promise<void>}
+         */
+        function submitLocationToAPI(data) {
+            console.log('Simulating API POST with payload:', data);
+
+            return new Promise((resolve, reject) => {
+                // Simulate network latency (1.5 seconds)
+                setTimeout(() => {
+                    // Simulate successful API call 90% of the time
+                    if (Math.random() < 0.9) {
+                        resolve();
+                    } else {
+                        // Simulate a failure for demonstration purposes
+                        reject(new Error("Server timeout or internal error."));
+                    }
+                }, 1500); 
+            });
+        }
+
+        // --- Main Execution ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initiate GPS Check on page load
+            if (navigator.geolocation) {
+                updateStatus('Requesting precise location from device...', 'loading');
+                // Request the current position with high accuracy
+                navigator.geolocation.getCurrentPosition(geoSuccess, geoError, {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                });
+            } else {
+                updateStatus('⚠️ Your browser does not support Geolocation.', 'error');
+            }
+        });
+    </script>
+</body>
+</html>
